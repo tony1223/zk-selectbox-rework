@@ -1,4 +1,4 @@
-zul.select.Selectbox = zk.$extends(zul.Widget, {
+zul.fiddle.selectbox.Selectbox = zk.$extends(zul.Widget, {
 	$define: {
 		selectedIndex: function (selectedIndex) {
 			var n = this.$n();
@@ -7,7 +7,7 @@ zul.select.Selectbox = zk.$extends(zul.Widget, {
 		}
 	},
 	bind_: function () {
-		this.$supers(zul.select.Selectbox, 'bind_', arguments);
+		this.$supers(zul.fiddle.selectbox.Selectbox, 'bind_', arguments);
 		var n = this.$n();
 		this.domListen_(n, 'onChange')
 			.domListen_(n, 'onFocus', 'doFocus_')
@@ -18,11 +18,14 @@ zul.select.Selectbox = zk.$extends(zul.Widget, {
 		this.domUnlisten_(n, 'onChange')
 			.domUnlisten_(n, 'onFocus', 'doFocus_')
 			.domUnlisten_(n, 'onBlur', 'doBlur_')
-			.$supers(zul.select.Selectbox, 'unbind_', arguments);
+			.$supers(zul.fiddle.selectbox.Selectbox, 'unbind_', arguments);
 	},
 	_doChange: function (evt) {
 		var n = this.$n();
 		this.setSelectedIndex(n.selectedIndex);
-		this.fire('onSelect', n.selectedIndex);
+		this.fire('onSelect', { 
+			index:n.selectedIndex,
+			value:n.value
+		});
 	}
 });

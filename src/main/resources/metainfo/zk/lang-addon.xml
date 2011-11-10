@@ -6,8 +6,8 @@
 	<language-name>xul/html</language-name>
 	
 	<component>
-		<component-name>selectbox</component-name>
-		<component-class>org.zkoss.zul.Selectbox</component-class>
+		<component-name>selectboxrw</component-name>
+		<component-class>org.zkoss.fiddle.Selectbox</component-class>
 		<annotation>
 			<annotation-name>default-bind</annotation-name>
 			<property-name>model</property-name>
@@ -32,7 +32,7 @@
 				<attribute-value>both</attribute-value>
 			</attribute>
 		</annotation>
-		<widget-class>zul.select.Selectbox</widget-class>
+		<widget-class>zul.fiddle.selectbox.Selectbox</widget-class>
 		<mold>
 			<mold-name>default</mold-name>
 			<mold-uri>mold/selectbox.js</mold-uri>

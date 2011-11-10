@@ -1,0 +1,18 @@
+<zk>
+	<div id="con" apply="test.SelectboxTestComposer">
+		<selectboxrw model="${con$composer.list}"
+			onSelect="alert(self.value)" 
+			optionRenderer="test.optionrenderer.SingleOptionTextStringRenderer"
+		/>
+		<separator />
+		<selectboxrw model="${con$composer.list}"
+			onSelect="alert(self.value)" 
+			optionRenderer="test.optionrenderer.OptionTextValueStringRenderer"
+		/>
+		<separator />
+		<selectboxrw model="${con$composer.list}" 
+			onSelect="alert(self.value)"
+			optionRenderer="test.optionrenderer.OptionGroupStringRenderer"
+		/>
+	</div>
+</zk>

@@ -1,3 +1,0 @@
-<package name="zul.select" language="xul/html" depends="zul,zul.sel">
-	<widget name="Selectbox"/>
-</package>

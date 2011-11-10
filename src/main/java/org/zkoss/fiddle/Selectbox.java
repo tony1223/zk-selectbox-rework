@@ -1,12 +1,16 @@
-package org.zkoss.zul;
+package org.zkoss.fiddle;
 
-import org.zkoss.json.JSONValue;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.zkoss.lang.Classes;
 import org.zkoss.lang.Objects;
 import org.zkoss.zk.ui.HtmlBasedComponent;
 import org.zkoss.zk.ui.Page;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zul.ListModel;
 import org.zkoss.zul.event.ListDataEvent;
 import org.zkoss.zul.event.ListDataListener;
 
@@ -16,6 +20,8 @@ public class Selectbox extends HtmlBasedComponent {
 	private String _name;
 	private boolean _disabled;
 	private int _jsel = -1;
+	private String _value = null;
+	
 	private transient ListModel _model;
 	private transient ListDataListener _dataListener;
 	private transient OptionRenderer _renderer;
@@ -40,22 +46,23 @@ public class Selectbox extends HtmlBasedComponent {
 			smartUpdate("selectedIndex", jsel);
 		}
 	}
-	public OptionRenderer getItemRenderer() {
+	
+	public OptionRenderer getOptionRenderer() {
 		return _renderer;
 	}
 
-	public void setItemRenderer(OptionRenderer renderer) {
+	public void setOptionRenderer(OptionRenderer renderer) {
 		if (_renderer != renderer) {
 			_renderer = renderer;
 			invalidate();
 		}
 	}
 
-	public void setItemRenderer(String clsnm) throws ClassNotFoundException,
+	public void setOptionRenderer(String clsnm) throws ClassNotFoundException,
 			NoSuchMethodException, IllegalAccessException,
 			InstantiationException, java.lang.reflect.InvocationTargetException {
 		if (clsnm != null)
-			setItemRenderer((OptionRenderer) Classes
+			setOptionRenderer((OptionRenderer) Classes
 					.newInstanceByThread(clsnm));
 	}
 
@@ -163,15 +170,60 @@ public class Selectbox extends HtmlBasedComponent {
 	}
 
 	public OptionRenderer getRealRenderer() {
-		final OptionRenderer renderer = getItemRenderer();
+		final OptionRenderer renderer = getOptionRenderer();
 		return renderer != null ? renderer : _defRend; 
 	}
 	
 	private static final OptionRenderer _defRend = new OptionRenderer() {
-		public String render(Object data) {
-			return Objects.toString(data);
+		public void render(OptionBuilder builder, Object data) throws Exception {
+			builder.appendOption(Objects.toString(data));
 		}
 	};
+	
+	private static class InnerOptionBuilder implements OptionBuilder{
+		private List<String[]> items;
+		private boolean grouping = false;
+		
+		private void doGroup(String text){
+			if(grouping) {
+				throw new IllegalStateException("HTML doesn't support nest option group (optgroup).");
+			}
+			items.add(new String[]{text,null,"1"});
+			grouping = true;
+		}
+		private void endGroup(){
+			grouping = false;
+			items.add(new String[]{null,null,"0"});
+		}
+		
+		
+		public InnerOptionBuilder() {
+			items = new ArrayList<String[]>();
+		}
+		public void appendOption(String text) {
+			items.add(new String[]{text});
+		}
+
+		public void appendOption(String text, String value) {
+			items.add(new String[]{text,value});
+		}
+
+		public void appendOptionGroup(String text, List subModel, OptionRenderer subOptionRender) throws Exception {
+			doGroup(text);
+			
+			for(Object o : subModel){
+				subOptionRender.render(this,o);
+			}
+			
+			endGroup();
+		}
+		
+		public List<String[]> getItems() {
+			return items;
+		}
+		
+	};
+	
 	// -- ComponentCtrl --//
 	protected void renderProperties(org.zkoss.zk.ui.sys.ContentRenderer renderer)
 			throws java.io.IOException {
@@ -185,28 +237,28 @@ public class Selectbox extends HtmlBasedComponent {
 	        StringBuffer sb = new StringBuffer();
 	        sb.append('[');
 	        OptionRenderer render = getRealRenderer();
+	        
+	        InnerOptionBuilder builder = new InnerOptionBuilder();
 			for (int i = 0; i < _model.getSize(); i++) {	            
 				Object value = _model.getElementAt(i);
 				try {
-					sb.append(JSONValue.toJSONString(render.render(value)));
-					sb.append(',');
+					render.render(builder, value);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
-			if (sb.length() > 1)
-				sb.delete(sb.length() - 1, sb.length());
-	        sb.append(']');
-			render(renderer, "items", sb.toString());
+			render(renderer, "items",builder.getItems());
 		}
 	}
 
 	public void service(org.zkoss.zk.au.AuRequest request, boolean everError) {
 		final String cmd = request.getCommand();
 		if (cmd.equals(Events.ON_SELECT)) {
-			_jsel = ((Integer)request.getData().get("")).intValue();
-			Events.postEvent(new Event(Events.ON_SELECT, this, request.getData().get("")));
+			Map data = request.getData();
+				
+			_jsel = ((Integer)data.get("index")).intValue();
+			_value = ((String)data.get("value"));
+			Events.postEvent(new Event(Events.ON_SELECT, this, _value));
 		}
 	}
 	// Cloneable//
@@ -259,5 +311,13 @@ public class Selectbox extends HtmlBasedComponent {
 		super.sessionDidActivate(page);
 		didActivate(_model);
 		didActivate(_renderer);
+	}
+	
+	public String getValue() {
+		return _value;
+	}
+	
+	public void setValue(String _value) {
+		this._value = _value;
 	}
 }

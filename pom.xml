@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.zkoss.zk</groupId>
+	<groupId>org.zkoss.fiddle</groupId>
 	<artifactId>selectbox</artifactId>
-	<version>0.8.0</version>
+	<version>0.9.0</version>
 	<dependencies>
 		<dependency>
 			<groupId>org.zkoss.zk</groupId>
@@ -15,28 +15,12 @@
 	</dependencies>
 	<build>
 		<finalName>${project.artifactId}-${version}</finalName>
-		<plugins>
-			<plugin>
-				<groupId>org.zkoss.maven</groupId>
-				<artifactId>yuicompressor-maven-plugin-zk</artifactId>
-				<version>1.1.2</version>
-				<executions>
-					<execution>
-						<goals>
-							<goal>compress</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
-				<configuration>
-					<source>1.4</source>
-					<target>1.4</target>
-				</configuration>
-			</plugin>
+        <plugins>
+	        <plugin>
+	                <groupId>org.zkoss.maven</groupId>
+	                <artifactId>yuicompressor-maven-plugin-zk</artifactId>
+	                <version>1.1.6</version>
+	        </plugin>
 		</plugins>
 	</build>
 </project>

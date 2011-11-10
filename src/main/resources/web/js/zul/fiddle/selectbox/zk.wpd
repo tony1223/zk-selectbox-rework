@@ -1,0 +1,3 @@
+<package name="zul.fiddle.selectbox" language="xul/html" depends="zul,zul.sel">
+	<widget name="Selectbox"/>
+</package>
