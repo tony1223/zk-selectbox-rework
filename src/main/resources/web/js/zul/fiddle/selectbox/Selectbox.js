@@ -6,6 +6,22 @@ zul.fiddle.selectbox.Selectbox = zk.$extends(zul.Widget, {
 				n.selectedIndex = selectedIndex;
 		}
 	},
+	selectValue: function (val){
+		var wgt = this;
+		if (this.desktop) {
+			var n = this.$n();
+			jq("option", this).each(function(num) {
+				if (this.value == val) {
+					n.selectedIndex = num;
+					wgt._doChange();
+				}
+			});
+		}else{
+			zk.afterMount(function(){
+				wgt.selectValue(val);
+			});
+		}
+	},
 	bind_: function () {
 		this.$supers(zul.fiddle.selectbox.Selectbox, 'bind_', arguments);
 		var n = this.$n();

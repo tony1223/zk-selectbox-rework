@@ -1,14 +1,16 @@
 package org.zkoss.fiddle;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.zkoss.fiddle.event.OptionSelectedEvent;
 import org.zkoss.lang.Classes;
 import org.zkoss.lang.Objects;
+import org.zkoss.zk.au.out.AuInvoke;
 import org.zkoss.zk.ui.HtmlBasedComponent;
 import org.zkoss.zk.ui.Page;
-import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zul.ListModel;
 import org.zkoss.zul.event.ListDataEvent;
@@ -21,11 +23,14 @@ public class Selectbox extends HtmlBasedComponent {
 	private boolean _disabled;
 	private int _jsel = -1;
 	private String _value = null;
+	private int _optionSize = 0;
 	
 	private transient ListModel _model;
 	private transient ListDataListener _dataListener;
 	private transient OptionRenderer _renderer;
 	private static final String ATTR_ON_INIT_RENDER_POSTED = "org.zkoss.zul.onInitLaterPosted";
+	
+	private Map _optionValues = new HashMap<Integer,Object>();
 	
 	static {
 		addClientEvent(Selectbox.class, Events.ON_SELECT, 0);
@@ -38,6 +43,7 @@ public class Selectbox extends HtmlBasedComponent {
 	public int getSelectedIndex() {
 		return _jsel;
 	}
+
 	public void setSelectedIndex(int jsel) {
 		if (jsel < -1)
 			jsel = -1;
@@ -45,6 +51,16 @@ public class Selectbox extends HtmlBasedComponent {
 			_jsel = jsel;
 			smartUpdate("selectedIndex", jsel);
 		}
+	}
+	
+	/**
+	 * If value not found , will do nothing,
+	 * and this one will not effect immediately.
+	 * It's actually a client side method.
+	 * @param value
+	 */
+	public void doSelectedValue(String value) {
+		response(new AuInvoke(this,"selectValue",value));
 	}
 	
 	public OptionRenderer getOptionRenderer() {
@@ -57,7 +73,6 @@ public class Selectbox extends HtmlBasedComponent {
 			invalidate();
 		}
 	}
-
 	public void setOptionRenderer(String clsnm) throws ClassNotFoundException,
 			NoSuchMethodException, IllegalAccessException,
 			InstantiationException, java.lang.reflect.InvocationTargetException {
@@ -175,14 +190,61 @@ public class Selectbox extends HtmlBasedComponent {
 	}
 	
 	private static final OptionRenderer _defRend = new OptionRenderer() {
-		public void render(OptionBuilder builder, Object data) throws Exception {
+		public void render(Selectbox comp,OptionBuilder builder, Object data) throws Exception {
 			builder.appendOption(Objects.toString(data));
 		}
 	};
 	
+	/**
+	 * A way to keep option's value ,
+	 * it's a implicit operator with {@link OptionBuilder#appendOption(String, String, Object)}. 
+	 * @param index
+	 * @param val
+	 */
+	protected void setOptionValue(int index,Object val){
+		_optionValues.put(index,val);
+	}
+	
+	/**
+	 * A way to get the value set in OptionRenderer,to use this method, 
+	 * you must invoke the setOptionValue in OptionRenderer first.
+	 * 
+	 * Note: it's not getting the number immediately ,
+	 * Cause to our component lifecycle ,
+	 * if you invoke setModel or setRenderer or you are rendering the component, 
+	 * you have to wait for next AU to get correct option size.
+	 * 
+	 * @param index
+	 * @return
+	 */
+	public Object getOptionValue(int index){
+		return (Object) _optionValues.get(index);
+	}
+	
+	/**
+	 * A method to know how many options we have now . 
+	 * Note: it's not getting the number immediately ,
+	 * Cause to our component lifecycle ,
+	 * if you invoke setModel or setRenderer or you are rendering the component, 
+	 * you have to wait for next AU to get correct option size.
+	 * 
+	 * @return
+	 */
+	public int getOptionSize(){
+		return _optionSize;
+	}
+	
 	private static class InnerOptionBuilder implements OptionBuilder{
 		private List<String[]> items;
 		private boolean grouping = false;
+		private Selectbox selectbox;
+
+		private int index = 0;
+		
+		public InnerOptionBuilder(Selectbox selectbox){
+			this.selectbox = selectbox;
+			items = new ArrayList<String[]>();
+		}
 		
 		private void doGroup(String text){
 			if(grouping) {
@@ -196,23 +258,28 @@ public class Selectbox extends HtmlBasedComponent {
 			items.add(new String[]{null,null,"0"});
 		}
 		
-		
-		public InnerOptionBuilder() {
-			items = new ArrayList<String[]>();
+		public int getIndex() {
+			return index;
 		}
+		
+		private void addItem(String[] item){
+			index++;
+			items.add(item);
+		}
+		
 		public void appendOption(String text) {
-			items.add(new String[]{text});
+			addItem(new String[]{text});
 		}
 
 		public void appendOption(String text, String value) {
-			items.add(new String[]{text,value});
+			addItem(new String[]{text,value});
 		}
 
 		public void appendOptionGroup(String text, List subModel, OptionRenderer subOptionRender) throws Exception {
 			doGroup(text);
 			
 			for(Object o : subModel){
-				subOptionRender.render(this,o);
+				subOptionRender.render(selectbox,this,o);
 			}
 			
 			endGroup();
@@ -220,6 +287,11 @@ public class Selectbox extends HtmlBasedComponent {
 		
 		public List<String[]> getItems() {
 			return items;
+		}
+
+		public void appendOption(String text, String inputvalue, Object value) {
+			selectbox.setOptionValue(index,value);
+			appendOption(text,inputvalue);
 		}
 		
 	};
@@ -234,19 +306,20 @@ public class Selectbox extends HtmlBasedComponent {
 		renderer.render("selectedIndex", _jsel);
 		
 		if (_model != null) {
-	        StringBuffer sb = new StringBuffer();
-	        sb.append('[');
+			_optionValues.clear();
+			_optionSize = 0 ;
 	        OptionRenderer render = getRealRenderer();
 	        
-	        InnerOptionBuilder builder = new InnerOptionBuilder();
+	        InnerOptionBuilder builder = new InnerOptionBuilder(this);
 			for (int i = 0; i < _model.getSize(); i++) {	            
 				Object value = _model.getElementAt(i);
 				try {
-					render.render(builder, value);
+					render.render(this,builder, value);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
+			_optionSize = builder.getIndex();
 			render(renderer, "items",builder.getItems());
 		}
 	}
@@ -258,7 +331,8 @@ public class Selectbox extends HtmlBasedComponent {
 				
 			_jsel = ((Integer)data.get("index")).intValue();
 			_value = ((String)data.get("value"));
-			Events.postEvent(new Event(Events.ON_SELECT, this, _value));
+			Events.postEvent(new OptionSelectedEvent(
+					Events.ON_SELECT, this, _jsel,_value,getOptionValue(_jsel)));
 		}
 	}
 	// Cloneable//
